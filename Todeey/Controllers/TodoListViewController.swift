@@ -9,7 +9,7 @@
 import UIKit
 import CoreData
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: UITableViewController{
     //let defaults = UserDefaults.standard
     var itemArray = [Item]()
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -17,20 +17,8 @@ class TodoListViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-//        let newItem = Item()
-        
-        
-//        newItem.title = "Hello"
-//        itemArray.append(newItem)
-//                itemArray.append(newItem)
-//                itemArray.append(newItem)
-//                itemArray.append(newItem)
+
         tableView.reloadData()
-//        if let items = defaults.array(forKey: "ToDoListArray") as? [String]
-//        {
-//            itemArray = items
-//        }
-        
        loadItems();
     }
 
@@ -50,8 +38,10 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
+        
         saveItems()
-        print(itemArray[indexPath.row])
         tableView.deselectRow(at: indexPath, animated: true)
         
     }
@@ -103,9 +93,8 @@ class TodoListViewController: UITableViewController {
         self.tableView.reloadData()
     }
     
-    func loadItems()
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest())
     {
-        let request : NSFetchRequest<Item> = Item.fetchRequest()
         do
         {
             itemArray = try context.fetch(request)
@@ -114,6 +103,50 @@ class TodoListViewController: UITableViewController {
         {
             print("Error fetching data from context", error)
         }
+        tableView.reloadData()
+    }
+    
+}
+
+//MARK: - Search Bar Methods
+
+extension TodoListViewController : UISearchBarDelegate
+{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar)
+    {
+    self.view.endEditing(true)
+        if(searchBar.text == "")
+        {
+            searchBar.setShowsCancelButton(false, animated: true)
+        }
+        else
+        {
+            searchBar.setShowsCancelButton(true, animated: true)
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        searchBar.setShowsCancelButton(true, animated: true)
+        if(searchBar.text != "")
+        {
+            let request : NSFetchRequest<Item> = Item.fetchRequest()
+            //print(searchBar.text)
+            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+            
+            loadItems(with: request)
+        }
+        else
+        {
+            loadItems()
+        }
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.text = ""
+        searchBar.setShowsCancelButton(false, animated: true)
+        self.view.endEditing(true)
+        loadItems()
     }
 }
 
